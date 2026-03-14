@@ -1,4 +1,4 @@
-require('dotenv').config();
+  require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const Anthropic = require('@anthropic-ai/sdk');
 const express = require('express');
@@ -7,76 +7,53 @@ const app = express();
 const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {polling: true});
 const claude = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
 
-console.log('🔱 AI God System Starting...');
-
-// Master AI Agent
 async function masterAgent(userMessage) {
-  const response = await claude.messages.create({
-    model: 'claude-opus-4-6',
-    max_tokens: 1024,
-    messages: [{
-      role: 'user',
-      content: `You are the Master AI Agent of a digital empire system.
-      User command: ${userMessage}
-      
-      Analyze this command and respond with:
-      1. What task this is
-      2. Which agent should handle it
-      3. Step by step execution plan
-      
-      Be concise and actionable.`
-    }]
-  });
-  return response.content[0].text;
+  try {
+    const response = await claude.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: `You are Master AI Agent. User said: ${userMessage}
+        Give a helpful detailed response in same language user used.`
+      }]
+    });
+    return response.content[0].text;
+  } catch (error) {
+    return '❌ Error: ' + error.message;
+  }
 }
 
-// Telegram Bot Commands
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, 
-    '🔱 AI God System Active!\n\n' +
-    'Commands:\n' +
-    '/research [topic] - Research any topic\n' +
-    '/content [topic] - Generate content\n' +
-    '/plan [idea] - Business plan\n' +
-    '/help - Show commands'
+  bot.sendMessage(msg.chat.id,
+    '🔱 AI God System Active!\n\nCommands:\n/research [topic]\n/content [topic]\n/plan [idea]\n\nYa koi bhi message karo!'
   );
 });
 
 bot.onText(/\/research (.+)/, async (msg, match) => {
-  const topic = match[1];
-  bot.sendMessage(msg.chat.id, '🔍 Researching: ' + topic + '...');
-  const result = await masterAgent('Do market research on: ' + topic);
-  bot.sendMessage(msg.chat.id, '📊 Research Results:\n\n' + result);
+  await bot.sendMessage(msg.chat.id, '🔍 Researching...');
+  const result = await masterAgent('Research: ' + match[1]);
+  await bot.sendMessage(msg.chat.id, result);
 });
 
 bot.onText(/\/content (.+)/, async (msg, match) => {
-  const topic = match[1];
-  bot.sendMessage(msg.chat.id, '✍️ Creating content for: ' + topic + '...');
-  const result = await masterAgent('Create engaging content about: ' + topic);
-  bot.sendMessage(msg.chat.id, '📝 Content Ready:\n\n' + result);
+  await bot.sendMessage(msg.chat.id, '✍️ Creating...');
+  const result = await masterAgent('Create content about: ' + match[1]);
+  await bot.sendMessage(msg.chat.id, result);
 });
 
 bot.onText(/\/plan (.+)/, async (msg, match) => {
-  const idea = match[1];
-  bot.sendMessage(msg.chat.id, '🚀 Creating business plan for: ' + idea + '...');
-  const result = await masterAgent('Create a business plan for: ' + idea);
-  bot.sendMessage(msg.chat.id, '💼 Business Plan:\n\n' + result);
+  await bot.sendMessage(msg.chat.id, '🚀 Planning...');
+  const result = await masterAgent('Business plan for: ' + match[1]);
+  await bot.sendMessage(msg.chat.id, result);
 });
 
-// Handle any message
 bot.on('message', async (msg) => {
-  if (msg.text && !msg.text.startsWith('/')) {
-    bot.sendMessage(msg.chat.id, '⚡ Processing...');
-    const result = await masterAgent(msg.text);
-    bot.sendMessage(msg.chat.id, '🔱 AI Response:\n\n' + result);
-  }
+  if (!msg.text) return;
+  if (msg.text.startsWith('/')) return;
+  const result = await masterAgent(msg.text);
+  await bot.sendMessage(msg.chat.id, result);
 });
 
-// Express server for Railway
-app.get('/', (req, res) => {
-  res.send('🔱 AI God System is Running!');
-});
-
-app.listen(process.env.PORT || 3000, () => {
-  console.log('✅ Server Running!');
-});
+app.get('/', (req, res) => res.send('🔱 AI God System Running!'));
+app.listen(process.env.PORT || 3000, () => console.log('✅ Server Running!'));
